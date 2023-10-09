@@ -2,14 +2,16 @@
 #include <time.h>
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
+#include "SDL2/SDL_ttf.h"
+#include "render.h"
 
 // Constants
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH 600
+#define WINDOW_HEIGHT 800
 #define WINDOW_TITLE "Connect Four"
 #define WINDOW_ICON "textures/icon.png"
 
-#define COLOR_BACKGROUND 19, 21, 22, 255
+#define COLOR_BACKGROUND 36, 36, 36, 255
 #define COLOR_GRID 117, 117, 117, 117
 
 #define ROW_MAX 6
@@ -23,9 +25,12 @@ SDL_Window *window = NULL;
 SDL_Renderer *renderer = NULL;
 SDL_Surface *icon = NULL;
 SDL_Texture *textures[3] = {NULL}; // Index 0 for player 1, 1 for player 2, 2 for preview
+TTF_Font *font = NULL;
+SDL_Color textColor = {255, 255, 255, 255};
 
 int board[ROW_MAX][COL_MAX] = {0};
-int player_index = 1;
+int current_player = 1;
+int winner = 0;
 int game_is_running = 0;
 
 // Function to initialize SDL and other resources
@@ -38,6 +43,12 @@ int initialize() {
     if (IMG_Init(IMG_INIT_PNG) < 0) {
         fprintf(stderr, "Error initializing IMG: %s\n", IMG_GetError());
         return 0;
+    }
+
+    if (TTF_Init() < 0) {
+        fprintf(stderr, "TTF_Init error: %s\n", TTF_GetError());
+        SDL_Quit();
+        return 1;
     }
 
     window = SDL_CreateWindow(WINDOW_TITLE, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WINDOW_WIDTH, WINDOW_HEIGHT,
@@ -79,6 +90,16 @@ int loadTextures() {
     return 1;
 }
 
+int loadFont() {
+    font = TTF_OpenFont("fonts/IndieFlower-Regular.ttf", 48);
+    if (!font) {
+        fprintf(stderr, "TTF_OpenFont error: %s\n", TTF_GetError());
+        return 0;
+    }
+
+    return 1;
+}
+
 // Initialize game resources
 void setup() {
     srand(time(NULL));
@@ -86,6 +107,22 @@ void setup() {
     if (!loadTextures()) {
         game_is_running = 0;
     }
+
+    if (!loadFont()) {
+        game_is_running = 0;
+    }
+}
+
+// Clean up resources and quit the game
+void quit() {
+    for (int i = 0; i < 3; i++) {
+        SDL_DestroyTexture(textures[i]);
+    }
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    TTF_Quit();
+    IMG_Quit();
+    SDL_Quit();
 }
 
 void printBoard() {
@@ -100,11 +137,63 @@ void printBoard() {
 int dropPiece(int col) {
     for (int row = ROW_MAX - 1; row >= 0; --row) {
         if (board[row][col] == 0 || board[row][col] == 3) {
-            board[row][col] = player_index;
+            board[row][col] = current_player;
             return row;
         }
     }
     return -1; // Column is full
+}
+
+int checkWin(int player) {
+    // Check horizontally
+    for (int row = 0; row < ROW_MAX; ++row) {
+        for (int col = 0; col < COL_MAX - 3; ++col) {
+            if (board[row][col] == player &&
+                board[row][col + 1] == player &&
+                board[row][col + 2] == player &&
+                board[row][col + 3] == player) {
+                return player;
+            }
+        }
+    }
+
+    // Check vertically
+    for (int row = 0; row < ROW_MAX - 3; ++row) {
+        for (int col = 0; col < COL_MAX; ++col) {
+            if (board[row][col] == player &&
+                board[row + 1][col] == player &&
+                board[row + 2][col] == player &&
+                board[row + 3][col] == player) {
+                return player;
+            }
+        }
+    }
+
+    // Check diagonally (top-left to bottom-right)
+    for (int row = 0; row < ROW_MAX - 3; ++row) {
+        for (int col = 0; col < COL_MAX - 3; ++col) {
+            if (board[row][col] == player &&
+                board[row + 1][col + 1] == player &&
+                board[row + 2][col + 2] == player &&
+                board[row + 3][col + 3] == player) {
+                return player;
+            }
+        }
+    }
+
+    // Check diagonally (top-right to bottom-left)
+    for (int row = 0; row < ROW_MAX - 3; ++row) {
+        for (int col = 3; col < COL_MAX; ++col) {
+            if (board[row][col] == player &&
+                board[row + 1][col - 1] == player &&
+                board[row + 2][col - 2] == player &&
+                board[row + 3][col - 3] == player) {
+                return player;
+            }
+        }
+    }
+
+    return 0; // No winner yet
 }
 
 // Process user input and events
@@ -139,8 +228,14 @@ void process() {
                     break;
                 }
 
-                board[gridY][gridX] = player_index;
-                player_index = player_index == 1 ? 2 : 1;
+                board[gridY][gridX] = current_player;
+
+                winner = checkWin(current_player);
+                if (winner > 0) {
+                    game_is_running = 0;
+                }
+
+                current_player = current_player == 1 ? 2 : 1;
 
 
                 gridY = dropPiece(gridX);
@@ -218,22 +313,19 @@ void render() {
         }
     }
 
-    SDL_RenderPresent(renderer);
-}
+    char* subtitle = current_player == 1 ? "It's your turn" : "Opponent's turn";
+    drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 10, subtitle, &font, &textColor);
 
-// Clean up resources and quit the game
-void quit() {
-    for (int i = 0; i < 3; i++) {
-        SDL_DestroyTexture(textures[i]);
-    }
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    IMG_Quit();
-    SDL_Quit();
+    SDL_Rect stateRect = {WINDOW_WIDTH / 20, WINDOW_HEIGHT - WINDOW_HEIGHT / 10 - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE};
+    SDL_RenderCopy(renderer, textures[current_player - 1], NULL, &stateRect);
+
+
+    SDL_RenderPresent(renderer);
 }
 
 int main() {
     game_is_running = initialize();
+
     setup();
 
     while (game_is_running) {
@@ -241,6 +333,39 @@ int main() {
         update();
         render();
     }
+
+    if (winner != 0) {
+        game_is_running = 1;
+        while (game_is_running) {
+            SDL_Event event;
+            SDL_PollEvent(&event);
+            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
+                game_is_running = 0;
+            } else if (event.type == SDL_QUIT) {
+                game_is_running = 0;
+            }
+
+            SDL_SetRenderDrawColor(renderer, COLOR_BACKGROUND);
+            SDL_RenderClear(renderer);
+
+
+
+
+            char* subtitle = winner == 1 ? "Player 1 won! " : "Player 2 won!";
+            drawText(renderer, WINDOW_WIDTH / 3, WINDOW_HEIGHT - WINDOW_HEIGHT / 2, subtitle, &font, &textColor);
+            SDL_Rect titleRect = {WINDOW_WIDTH / 6, WINDOW_HEIGHT - WINDOW_HEIGHT / 2 - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE};
+            SDL_RenderCopy(renderer, textures[winner - 1], NULL, &titleRect);
+
+
+            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 9, "Press 'esc' to quit!", &font, &textColor);
+
+
+            SDL_RenderPresent(renderer);
+
+
+        }
+    }
+
 
     quit();
     return 0;
