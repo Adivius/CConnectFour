@@ -1,8 +1,12 @@
 #include <stdio.h>
+#include <pthread.h>
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
 #include "SDL2/SDL_ttf.h"
 #include "render.h"
+#include "multinet.h"
+
+#define USAGE "\033[0;31mUsgae: ./cconnectfour <port> <ip> \n"
 
 // Constants
 #define WINDOW_WIDTH 600
@@ -28,10 +32,14 @@ SDL_Texture *textures[3] = {NULL}; // Index 0 for player 1, 1 for player 2, 2 fo
 TTF_Font *font = NULL;
 SDL_Color textColor = {255, 255, 255, 255};
 
+pthread_t pthread;
+
 int board[ROW_MAX][COL_MAX] = {0};
+int id_player = 0;
 int current_player = 1;
 int winner = 0;
 int game_is_running = 0;
+int status = 0; // 0=Error(default), 1=Starting, 2=Playing, 3=Ending
 
 // Function to initialize SDL and other resources
 int initialize() {
@@ -77,7 +85,7 @@ int initialize() {
 
 // Load textures for players and preview
 int loadTextures() {
-    const char *textureFiles[3] = {"textures/player_0.png", "textures/player_1.png", "textures/preview.png"};
+    const char *textureFiles[3] = {"textures/player_1.png", "textures/player_2.png", "textures/preview.png"};
     for (int i = 0; i < 3; i++) {
         textures[i] = IMG_LoadTexture(renderer, textureFiles[i]);
         if (!textures[i]) {
@@ -116,11 +124,16 @@ void quit() {
     for (int i = 0; i < 3; i++) {
         SDL_DestroyTexture(textures[i]);
     }
+    SDL_FreeSurface(icon);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     TTF_Quit();
     IMG_Quit();
     SDL_Quit();
+
+    closeClient();
+    closeServer();
+    exit(0);
 }
 
 int dropPiece(int col) {
@@ -187,8 +200,12 @@ int checkWin(int player) {
 
 // Process user input and events
 void process() {
+
     SDL_Event event;
-    SDL_PollEvent(&event);
+
+    if (SDL_PollEvent(&event) == 0) {
+        return;
+    }
 
     switch (event.type) {
         case SDL_QUIT:
@@ -202,7 +219,12 @@ void process() {
             }
             break;
         case SDL_MOUSEBUTTONDOWN:
+
             if (event.button.button == SDL_BUTTON_LEFT) {
+
+                if (status != 2) {
+                    break;
+                }
 
                 int mouseX = event.button.x;
 
@@ -220,8 +242,10 @@ void process() {
                 board[gridY][gridX] = current_player;
 
                 winner = checkWin(current_player);
+
                 if (winner > 0) {
-                    game_is_running = 0;
+                    printf("Winner %d\n", winner);
+                    status = 3;
                 }
 
                 current_player = current_player == 1 ? 2 : 1;
@@ -243,6 +267,10 @@ void process() {
             }
             break;
         case SDL_MOUSEMOTION:
+
+            if (status != 2) {
+                return;
+            }
 
             int mouseX = event.button.x;
 
@@ -280,68 +308,87 @@ void render() {
     SDL_SetRenderDrawColor(renderer, COLOR_BACKGROUND);
     SDL_RenderClear(renderer);
 
-    for (int row = 0; row < ROW_MAX; row++) {
-        for (int col = 0; col < COL_MAX; col++) {
+    switch (status) {
+        case 1:
+            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 2, "Waiting for opponent", &font,
+                     &textColor);
+            break;
+        case 2:
+            for (int row = 0; row < ROW_MAX; row++) {
+                for (int col = 0; col < COL_MAX; col++) {
 
-            SDL_Rect cellRect = {GRID_OFFSET_X + col * CELL_SIZE, GRID_OFFSET_Y + row * CELL_SIZE, CELL_SIZE,
-                                 CELL_SIZE};
+                    SDL_Rect cellRect = {GRID_OFFSET_X + col * CELL_SIZE, GRID_OFFSET_Y + row * CELL_SIZE, CELL_SIZE,
+                                         CELL_SIZE};
 
-            SDL_SetRenderDrawColor(renderer, COLOR_GRID);
-            SDL_RenderDrawRect(renderer, &cellRect);
+                    SDL_SetRenderDrawColor(renderer, COLOR_GRID);
+                    SDL_RenderDrawRect(renderer, &cellRect);
 
-            SDL_RenderCopy(renderer, textures[board[row][col] - 1], NULL, &cellRect);
+                    SDL_RenderCopy(renderer, textures[board[row][col] - 1], NULL, &cellRect);
 
-        }
-    }
-
-    char *subtitle = current_player == 1 ? "It's your turn" : "Opponent's turn";
-    drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 10, subtitle, &font, &textColor);
-
-    SDL_Rect stateRect = {WINDOW_WIDTH / 20, WINDOW_HEIGHT - WINDOW_HEIGHT / 10 - CELL_SIZE / 2, CELL_SIZE, CELL_SIZE};
-    SDL_RenderCopy(renderer, textures[current_player - 1], NULL, &stateRect);
-
-    SDL_RenderPresent(renderer);
-}
-
-int main() {
-    game_is_running = initialize();
-
-    setup();
-
-    while (game_is_running) {
-        process();
-        update();
-        render();
-    }
-
-    if (winner != 0) {
-        game_is_running = 1;
-        while (game_is_running) {
-            SDL_Event event;
-            SDL_PollEvent(&event);
-            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {
-                game_is_running = 0;
-            } else if (event.type == SDL_QUIT) {
-                game_is_running = 0;
+                }
             }
 
-            SDL_SetRenderDrawColor(renderer, COLOR_BACKGROUND);
-            SDL_RenderClear(renderer);
+            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 10,
+                     current_player == 1 ? "It's your turn" : "Opponent's turn", &font, &textColor);
 
-            char *subtitle = winner == 1 ? "Player 1 won! " : "Player 2 won!";
-            drawText(renderer, WINDOW_WIDTH / 3, WINDOW_HEIGHT - WINDOW_HEIGHT / 2, subtitle, &font, &textColor);
+            SDL_Rect stateRect = {WINDOW_WIDTH / 20, WINDOW_HEIGHT - WINDOW_HEIGHT / 10 - CELL_SIZE / 2, CELL_SIZE,
+                                  CELL_SIZE};
+            SDL_RenderCopy(renderer, textures[current_player - 1], NULL, &stateRect);
+            break;
+        case 3:
+            drawText(renderer, WINDOW_WIDTH / 3, WINDOW_HEIGHT - WINDOW_HEIGHT / 2,
+                     winner == 1 ? "Player 1 won! " : "Player 2 won!", &font, &textColor);
             SDL_Rect titleRect = {WINDOW_WIDTH / 6, WINDOW_HEIGHT - WINDOW_HEIGHT / 2 - CELL_SIZE / 2, CELL_SIZE,
                                   CELL_SIZE};
             SDL_RenderCopy(renderer, textures[winner - 1], NULL, &titleRect);
 
             drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 9, "Press 'esc' to quit!", &font,
                      &textColor);
+            break;
 
-            SDL_RenderPresent(renderer);
+        default:
+            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 2, "Error", &font, &textColor);
+            break;
 
-        }
+
+    }
+    SDL_RenderPresent(renderer);
+
+}
+
+int main(int argc, char *argv[]) {
+
+    if (argc < 2) {
+        printf(USAGE);
+        return 0;
     }
 
+
+    game_is_running = initialize();
+
+    setup();
+
+    status = 1;
+
+    if (argc == 2) {
+        id_player = 1;
+        startServer(atoi(argv[1]));
+
+        pthread_create(&pthread, NULL, (void*)waitForClient, &status);
+
+
+    } else if (argc > 2) {
+        id_player = 2;
+
+        connectToServer(atoi(argv[1]), argv[2], &status);
+    }
+
+
+    while (game_is_running) {
+        process();
+        update();
+        render();
+    }
 
     quit();
     return 0;
