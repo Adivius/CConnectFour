@@ -6,7 +6,7 @@
 #include "render.h"
 #include "multinet.h"
 
-#define USAGE "\033[0;31mUsgae: ./cconnectfour <port> <ip> \n"
+#define USAGE "\033[0;31mUsgae: ./cconnectfour <port> <ip>"
 
 // Constants
 #define WINDOW_WIDTH 600
@@ -370,7 +370,7 @@ void render() {
 int main(int argc, char *argv[]) {
 
     if (argc < 2) {
-        printf(USAGE);
+        puts(USAGE);
         return 0;
     }
 
