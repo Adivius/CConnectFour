@@ -223,7 +223,11 @@ void process() {
             if (event.button.button == SDL_BUTTON_LEFT) {
 
                 if (status != 2) {
-                    break;
+                    return;
+                }
+
+                if (current_player != id_player){
+                    return;
                 }
 
                 int mouseX = event.button.x;
@@ -272,6 +276,10 @@ void process() {
                 return;
             }
 
+            if (current_player != id_player){
+                return;
+            }
+
             int mouseX = event.button.x;
 
             int gridX = (mouseX - GRID_OFFSET_X) / CELL_SIZE;
@@ -299,6 +307,9 @@ void process() {
 
 // Update game logic
 void update() {
+    if (current_player != id_player){
+        receiveBytes(id_player == 1 ? client_socket : server_socket);
+    }
 }
 
 
@@ -372,6 +383,7 @@ int main(int argc, char *argv[]) {
 
     if (argc == 2) {
         id_player = 1;
+        current_player = id_player;
         startServer(atoi(argv[1]));
 
         pthread_create(&pthread, NULL, (void*)waitForClient, &status);
@@ -379,6 +391,7 @@ int main(int argc, char *argv[]) {
 
     } else if (argc > 2) {
         id_player = 2;
+        current_player = 1;
 
         connectToServer(atoi(argv[1]), argv[2], &status);
     }

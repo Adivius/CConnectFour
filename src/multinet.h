@@ -27,24 +27,33 @@ void *waitForClient(int *status) {
 
 }
 
-void processClient() {
-    while (1) {
-        int bytes_received = recv(client_socket, buffer, sizeof(buffer), 0);
-        if (bytes_received <= 0) {
-            break;
-        }
+void sendBytes(int socket, char text[BUFFER_SIZE]) {
+    int text_length = strlen(text);
+    if (text_length >= BUFFER_SIZE) {
+        fprintf(stderr, "Text too long to send\n");
+        return;
+    }
 
-        // Null-terminate the received data
-        buffer[bytes_received] = '\0';
+    strncpy(buffer, text, text_length);
+    buffer[text_length] = '\0';
 
-        // Send the received data back to the client
-        send(client_socket, buffer, bytes_received, 0);
-
-
-        printf("Client disconnected\n");
-        close(client_socket);
+    if (send(socket, buffer, text_length, 0) == -1) {
+        perror("Error sending data");
     }
 }
+
+void receiveBytes(int socket) {
+    int bytes_received = recv(socket, buffer, BUFFER_SIZE - 1, 0);
+    if (bytes_received == -1) {
+        perror("Error receiving data");
+        return;
+    }
+
+    buffer[bytes_received] = '\0';
+    printf("Server says: %s\n", buffer);
+}
+
+
 
 
 int startServer(int port) {
@@ -88,7 +97,6 @@ void closeClient(){
 }
 
 int connectToServer(int port, char *ip, int *status) {
-    int client_socket;
     struct sockaddr_in server_addr;
     //char buffer[BUFFER_SIZE];
 
@@ -116,3 +124,6 @@ int connectToServer(int port, char *ip, int *status) {
 
     return 0;
 }
+
+
+
