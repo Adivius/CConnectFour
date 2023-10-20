@@ -381,9 +381,10 @@ int main(int argc, char *argv[]) {
 
     status = 1;
 
+    current_player = 1;
+    
     if (argc == 2) {
         id_player = 1;
-        current_player = id_player;
         startServer(atoi(argv[1]));
 
         pthread_create(&pthread, NULL, (void*)waitForClient, &status);
@@ -391,8 +392,6 @@ int main(int argc, char *argv[]) {
 
     } else if (argc > 2) {
         id_player = 2;
-        current_player = 1;
-
         connectToServer(atoi(argv[1]), argv[2], &status);
     }
 
