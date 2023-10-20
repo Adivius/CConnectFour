@@ -308,7 +308,7 @@ void process() {
 // Update game logic
 void update() {
     if (current_player != id_player){
-        receiveBytes(id_player == 1 ? client_socket : server_socket);
+        receiveBytes(id_player == 1 ? server_socket : client_socket);
     }
 }
 
