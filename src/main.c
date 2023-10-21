@@ -1,10 +1,11 @@
 #include <stdio.h>
-#include <pthread.h>
 #include "SDL2/SDL.h"
 #include "SDL2/SDL_image.h"
 #include "SDL2/SDL_ttf.h"
 #include "render.h"
-#include "multinet.h"
+#include "server.h"
+#include "client.h"
+#include "updater.h"
 
 #define USAGE "\033[0;31mUsgae: ./cconnectfour <port> <ip>"
 
@@ -31,8 +32,6 @@ SDL_Surface *icon = NULL;
 SDL_Texture *textures[3] = {NULL}; // Index 0 for player 1, 1 for player 2, 2 for preview
 TTF_Font *font = NULL;
 SDL_Color textColor = {255, 255, 255, 255};
-
-pthread_t pthread;
 
 int board[ROW_MAX][COL_MAX] = {0};
 int id_player = 0;
@@ -80,11 +79,7 @@ int initialize() {
         return 0;
     }
 
-    return 1;
-}
-
-// Load textures for players and preview
-int loadTextures() {
+    //Load textures
     const char *textureFiles[3] = {"textures/player_1.png", "textures/player_2.png", "textures/preview.png"};
     for (int i = 0; i < 3; i++) {
         textures[i] = IMG_LoadTexture(renderer, textureFiles[i]);
@@ -93,34 +88,26 @@ int loadTextures() {
             return 0;
         }
     }
-    return 1;
-}
 
-int loadFont() {
+    //Load font
     font = TTF_OpenFont(FONT_PATH, 48);
     if (!font) {
         fprintf(stderr, "TTF_OpenFont error: %s\n", TTF_GetError());
         return 0;
     }
+
+    status = 1;
+    current_player = 1;
     return 1;
-}
-
-// Initialize game resources
-void setup() {
-
-    if (!loadTextures()) {
-        game_is_running = 0;
-        return;
-    }
-
-    if (!loadFont()) {
-        game_is_running = 0;
-        return;
-    }
 }
 
 // Clean up resources and quit the game
 void quit() {
+    closeClient();
+    if (id_player == 1) {
+        closeClients();
+        closeServer();
+    }
     for (int i = 0; i < 3; i++) {
         SDL_DestroyTexture(textures[i]);
     }
@@ -130,16 +117,12 @@ void quit() {
     TTF_Quit();
     IMG_Quit();
     SDL_Quit();
-
-    closeClient();
-    closeServer();
     exit(0);
 }
 
 int dropPiece(int col) {
     for (int row = ROW_MAX - 1; row >= 0; --row) {
         if (board[row][col] == 0 || board[row][col] == 3) {
-            board[row][col] = current_player;
             return row;
         }
     }
@@ -220,63 +203,15 @@ void process() {
             break;
         case SDL_MOUSEBUTTONDOWN:
 
-            if (event.button.button == SDL_BUTTON_LEFT) {
-
-                if (status != 2) {
-                    return;
-                }
-
-                if (current_player != id_player){
-                    return;
-                }
-
-                int mouseX = event.button.x;
-
-                int gridX = (mouseX - GRID_OFFSET_X) / CELL_SIZE;
-
-                if (gridX < 0 || gridX >= COL_MAX) {
-                    break;
-                }
-
-                int gridY = dropPiece(gridX);
-                if (gridY == -1) {
-                    break;
-                }
-
-                board[gridY][gridX] = current_player;
-
-                winner = checkWin(current_player);
-
-                if (winner > 0) {
-                    printf("Winner %d\n", winner);
-                    status = 3;
-                }
-
-                current_player = current_player == 1 ? 2 : 1;
-
-
-                gridY = dropPiece(gridX);
-                if (gridY == -1) {
-                    break;
-                }
-
-                for (int row = 0; row < ROW_MAX; row++) {
-                    for (int col = 0; col < COL_MAX; col++) {
-                        if (board[row][col] == 3) {
-                            board[row][col] = 0;
-                        }
-                    }
-                }
-                board[gridY][gridX] = 3;
+            if (event.button.button != SDL_BUTTON_LEFT) {
+                return;
             }
-            break;
-        case SDL_MOUSEMOTION:
 
             if (status != 2) {
                 return;
             }
 
-            if (current_player != id_player){
+            if (current_player != id_player) {
                 return;
             }
 
@@ -285,31 +220,45 @@ void process() {
             int gridX = (mouseX - GRID_OFFSET_X) / CELL_SIZE;
 
             if (gridX < 0 || gridX >= COL_MAX) {
-                break;
+                return;
             }
 
             int gridY = dropPiece(gridX);
             if (gridY == -1) {
-                break;
+                return;
             }
 
-            for (int row = 0; row < ROW_MAX; row++) {
-                for (int col = 0; col < COL_MAX; col++) {
-                    if (board[row][col] == 3) {
-                        board[row][col] = 0;
-                    }
-                }
-            }
-            board[gridY][gridX] = 3;
+            update(gridX);
+
+            sendByteToServer(gridX + '0');
+
+
+            printf("GEDRÜCKT, Jetzt ist %d dran\n", current_player);
             break;
     }
 }
 
 // Update game logic
-void update() {
-    if (current_player != id_player){
-        receiveBytes(id_player == 1 ? server_socket : client_socket);
+void update(int gridX) {
+    if (status != 2) {
+        return;
     }
+
+    int gridY = dropPiece(gridX);
+    if (gridY == -1) {
+        return;
+    }
+
+    board[gridY][gridX] = current_player;
+
+    winner = checkWin(current_player);
+    if (winner > 0) {
+        printf("Winner %d\n", winner);
+        status = 3;
+    }
+
+
+    current_player = current_player == 1 ? 2 : 1;
 }
 
 
@@ -340,7 +289,7 @@ void render() {
             }
 
             drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 10,
-                     current_player == 1 ? "It's your turn" : "Opponent's turn", &font, &textColor);
+                     current_player == id_player ? "It's your turn" : "Opponent's turn", &font, &textColor);
 
             SDL_Rect stateRect = {WINDOW_WIDTH / 20, WINDOW_HEIGHT - WINDOW_HEIGHT / 10 - CELL_SIZE / 2, CELL_SIZE,
                                   CELL_SIZE};
@@ -374,31 +323,20 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-
     game_is_running = initialize();
 
-    setup();
-
-    status = 1;
-
-    current_player = 1;
-    
     if (argc == 2) {
         id_player = 1;
         startServer(atoi(argv[1]));
-
-        pthread_create(&pthread, NULL, (void*)waitForClient, &status);
-
-
-    } else if (argc > 2) {
+        connectToServer(atoi(argv[1]), "127.0.0.1");
+    } else {
         id_player = 2;
-        connectToServer(atoi(argv[1]), argv[2], &status);
+        connectToServer(atoi(argv[1]), argv[2]);
+        status = 2;
     }
-
 
     while (game_is_running) {
         process();
-        update();
         render();
     }
 
