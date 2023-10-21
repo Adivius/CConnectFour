@@ -12,7 +12,7 @@
 // Constants
 #define WINDOW_WIDTH 600
 #define WINDOW_HEIGHT 800
-#define WINDOW_TITLE "Connect Four"
+#define WINDOW_TITLE "Connect Four - Waiting for player..."
 #define WINDOW_ICON_PATH "textures/icon.png"
 #define FONT_PATH "fonts/IndieFlower-Regular.ttf"
 
@@ -99,6 +99,10 @@ int initialize() {
     status = 1;
     current_player = 1;
     return 1;
+}
+
+void setWindowTitle(char* title){
+    SDL_SetWindowTitle(window, title);
 }
 
 // Clean up resources and quit the game
@@ -232,8 +236,6 @@ void process() {
 
             sendByteToServer(gridX + '0');
 
-
-            printf("GEDRÜCKT, Jetzt ist %d dran\n", current_player);
             break;
     }
 }
@@ -297,7 +299,7 @@ void render() {
             break;
         case 3:
             drawText(renderer, WINDOW_WIDTH / 3, WINDOW_HEIGHT - WINDOW_HEIGHT / 2,
-                     winner == 1 ? "Player 1 won! " : "Player 2 won!", &font, &textColor);
+                     winner == id_player ? "You won! " : "You lost!", &font, &textColor);
             SDL_Rect titleRect = {WINDOW_WIDTH / 6, WINDOW_HEIGHT - WINDOW_HEIGHT / 2 - CELL_SIZE / 2, CELL_SIZE,
                                   CELL_SIZE};
             SDL_RenderCopy(renderer, textures[winner - 1], NULL, &titleRect);
@@ -329,10 +331,12 @@ int main(int argc, char *argv[]) {
         id_player = 1;
         startServer(atoi(argv[1]));
         connectToServer(atoi(argv[1]), "127.0.0.1");
+        setWindowTitle("Connect Four - Player 1 (Server)");
     } else {
         id_player = 2;
         connectToServer(atoi(argv[1]), argv[2]);
         status = 2;
+        setWindowTitle("Connect Four - Player 2 (Client)");
     }
 
     while (game_is_running) {

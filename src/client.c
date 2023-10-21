@@ -46,7 +46,6 @@ void sendByteToServer(char column) {
     if (write(client_socket, &column, 1) == -1) {
         perror("Error sending data");
     }
-    printf("Sent bytes to server %c\n", column);
 }
 
 void *receiveBytesFromServer() {

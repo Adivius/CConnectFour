@@ -99,7 +99,6 @@ char receiveByte(int id) {
         perror("Error receiving data");
         exit(1);
     }
-    printf("CLIENT SAYS %c\n", temp);
     return temp;
 }
 
