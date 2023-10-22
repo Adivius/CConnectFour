@@ -5,7 +5,7 @@
 #include "render.h"
 #include "server.h"
 #include "client.h"
-#include "updater.h"
+#include "utils.h"
 
 #define USAGE "\033[0;31mUsgae: ./cconnectfour <port> <ip>"
 
@@ -39,6 +39,7 @@ int current_player = 1;
 int winner = 0;
 int game_is_running = 0;
 int status = 0; // 0=Error(default), 1=Starting, 2=Playing, 3=Ending
+int rematch = 0;
 
 // Function to initialize SDL and other resources
 int initialize() {
@@ -107,6 +108,7 @@ void setWindowTitle(char* title){
 
 // Clean up resources and quit the game
 void quit() {
+    status = 0;
     closeClient();
     if (id_player == 1) {
         closeClients();
@@ -203,6 +205,14 @@ void process() {
                 case SDLK_ESCAPE:
                     game_is_running = 0;
                     break;
+                case SDLK_r:
+                    if (status != 3){
+                        return;
+                    }
+                    char temp = (7 + id_player) + '0';
+                    sendByteToServer(temp);
+                    reset();
+                    break;
             }
             break;
         case SDL_MOUSEBUTTONDOWN:
@@ -263,6 +273,13 @@ void update(int gridX) {
     current_player = current_player == 1 ? 2 : 1;
 }
 
+void reset(){
+    printf("Test5");
+    current_player = 1;
+    memset(board, 0, sizeof(board[0][0]) * ROW_MAX * COL_MAX);
+    status = 2;
+}
+
 
 // Render game graphics
 void render() {
@@ -304,7 +321,9 @@ void render() {
                                   CELL_SIZE};
             SDL_RenderCopy(renderer, textures[winner - 1], NULL, &titleRect);
 
-            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 9, "Press 'esc' to quit!", &font,
+            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 8, "Press 'esc' to quit", &font,
+                     &textColor);
+            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 14, "And 'R' to rematch!", &font,
                      &textColor);
             break;
 
@@ -327,13 +346,13 @@ int main(int argc, char *argv[]) {
 
     game_is_running = initialize();
 
+    id_player = argc == 2 ? 1 : 2;
+
     if (argc == 2) {
-        id_player = 1;
         startServer(atoi(argv[1]));
         connectToServer(atoi(argv[1]), "127.0.0.1");
         setWindowTitle("Connect Four - Player 1 (Server)");
     } else {
-        id_player = 2;
         connectToServer(atoi(argv[1]), argv[2]);
         status = 2;
         setWindowTitle("Connect Four - Player 2 (Client)");

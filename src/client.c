@@ -4,7 +4,8 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
-#include "updater.h"
+#include "utils.h"
+#include "server.h"
 
 int client_socket;
 
@@ -43,6 +44,7 @@ void connectToServer(int port, char *ip) {
 }
 
 void sendByteToServer(char column) {
+    printf("Test1\n");
     if (write(client_socket, &column, 1) == -1) {
         perror("Error sending data");
     }
@@ -56,13 +58,17 @@ void *receiveBytesFromServer() {
             exit(1);
         }
 
+        printf("TEst6\n");
+
         int column = temp - '0';
 
-        if (column == -1){
-            break;
-        }
+        printf("received %d\n", column);
 
-        update(column);
+        if (column > 7){
+            reset();
+        } else{
+            update(column);
+        }
     }
 
     return NULL;

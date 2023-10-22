@@ -76,10 +76,26 @@ void *waitForClients() {
 
 
 void *distribute() {
-    while (status == 2) {
+    while (1) {
         char column = receiveByte(player);
-        player = player == 1 ? 2 : 1;
-        sendByte(player, column);
+        printf("Test2\n");
+
+        int temp = (column - '0');
+
+        if (temp < 7) {
+            player = player == 1 ? 2 : 1;
+            sendByte(player, column);
+        } else if (temp == 7) {
+            sendByte(2, column);
+            player = 1;
+            printf("Test3.1");
+        } else if (temp == 8) {
+            sendByte(1, column);
+            player = 1;
+            printf("Test3.2");
+        }
+        printf("Test4\n");
+        printf("Server sent %d\n", (column - '0'));
     }
 
     return NULL;
