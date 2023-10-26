@@ -14,7 +14,8 @@ socklen_t client_addr_len = sizeof(client_one_addr);
 int player = 1;
 
 pthread_t starter_thread;
-pthread_t server_thread;
+pthread_t server_thread_one;
+pthread_t server_thread_two;
 
 
 void startServer(int port) {
@@ -47,6 +48,25 @@ void startServer(int port) {
     pthread_create(&starter_thread, NULL, waitForClients, NULL);
 
 }
+void *distribute_one() {
+    while (1) {
+        char column = receiveByte(1);
+        sendByte(2, column);
+        printf("Server sent %d\n", (column - '0'));
+    }
+
+    return NULL;
+}
+
+void *distribute_two() {
+    while (1) {
+        char column = receiveByte(2);
+        sendByte(1, column);
+        printf("Server sent %d\n", (column - '0'));
+    }
+
+    return NULL;
+}
 
 void *waitForClients() {
 
@@ -64,7 +84,8 @@ void *waitForClients() {
 
     status = 2;
 
-    pthread_create(&server_thread, NULL, distribute, NULL);
+    pthread_create(&server_thread_one, NULL, distribute_one, NULL);
+    pthread_create(&server_thread_two, NULL, distribute_two, NULL);
 
     printf("Clients connected! Started server thread %s:%d\n", inet_ntoa(client_two_addr.sin_addr),
            ntohs(client_two_addr.sin_port));
@@ -72,33 +93,6 @@ void *waitForClients() {
 
     return NULL;
 
-}
-
-
-void *distribute() {
-    while (1) {
-        char column = receiveByte(player);
-        printf("Test2\n");
-
-        int temp = (column - '0');
-
-        if (temp < 7) {
-            player = player == 1 ? 2 : 1;
-            sendByte(player, column);
-        } else if (temp == 7) {
-            sendByte(2, column);
-            player = 1;
-            printf("Test3.1");
-        } else if (temp == 8) {
-            sendByte(1, column);
-            player = 1;
-            printf("Test3.2");
-        }
-        printf("Test4\n");
-        printf("Server sent %d\n", (column - '0'));
-    }
-
-    return NULL;
 }
 
 void sendByte(int id, char column) {
