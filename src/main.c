@@ -5,6 +5,10 @@
 #include "render.h"
 #include "server.h"
 #include "client.h"
+#include <stdlib.h>
+#include <arpa/inet.h>
+#include <netdb.h>
+
 #include "utils.h"
 
 #define USAGE "\033[0;31mUsgae: ./cconnectfour <port> <ip>"
@@ -274,7 +278,6 @@ void update(int gridX) {
 }
 
 void reset(){
-    printf("Test5");
     current_player = 1;
     memset(board, 0, sizeof(board[0][0]) * ROW_MAX * COL_MAX);
     status = 2;
@@ -337,6 +340,24 @@ void render() {
 
 }
 
+int resolveHostnameToIP(const char *hostname, char *resolvedIP, size_t resolvedIPSize) {
+    struct addrinfo *info;
+
+    // Resolve the hostname
+    if (getaddrinfo(hostname, NULL, NULL, &info) != 0) {
+        return -1; // Failed to resolve hostname
+    }
+
+    // Convert to string
+    if (inet_ntop(AF_INET, &(((struct sockaddr_in *)(info->ai_addr))->sin_addr), resolvedIP, resolvedIPSize) == NULL) {
+        freeaddrinfo(info);
+        return -1; // Failed to convert to IP string
+    }
+
+    freeaddrinfo(info); // Free the memory allocated by getaddrinfo
+    return 0; // Success
+}
+
 int main(int argc, char *argv[]) {
 
     if (argc < 2) {
@@ -353,7 +374,12 @@ int main(int argc, char *argv[]) {
         connectToServer(atoi(argv[1]), "127.0.0.1");
         setWindowTitle("Connect Four - Player 1 (Server)");
     } else {
-        connectToServer(atoi(argv[1]), argv[2]);
+        char resolvedIP[INET_ADDRSTRLEN];
+        if (resolveHostnameToIP(argv[2], resolvedIP, INET_ADDRSTRLEN) != 0){
+            puts("Invalid ip\n");
+            exit(1);
+        }
+        connectToServer(atoi(argv[1]), resolvedIP);
         status = 2;
         setWindowTitle("Connect Four - Player 2 (Client)");
     }
