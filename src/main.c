@@ -93,13 +93,8 @@ void setWindowTitle(char* title){
 void quit() {
     status = 0;
     closeClient();
-    printf("Test1\n");
     if (id_player == 1) {
-        closeClients();
-        printf("Test2\n");
         closeServer();
-        printf("Test3\n");
-
     }
     for (int i = 0; i < 3; i++) {
         SDL_DestroyTexture(textures[i]);

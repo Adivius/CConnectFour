@@ -5,6 +5,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
+#include <signal.h>
 
 int server_socket, client_one_socket, client_two_socket;
 
@@ -109,17 +110,18 @@ char receiveByte(int id) {
 }
 
 void closeServer() {
-    pthread_cancel(starter_thread);
+    closeClients();
     close(server_socket);
+    printf("Server closed\n");
 }
 
 void closeClients() {
-    pthread_cancel(client_one_socket);
-    pthread_cancel(client_two_socket);
-    printf("Test Tread\n");
+    pthread_cancel(server_thread_one);
+    pthread_cancel(server_thread_two);
+    // Wait for threads to terminate before closing sockets
+    pthread_join(server_thread_one, NULL);
+    pthread_join(server_thread_two, NULL);
     close(client_one_socket);
-    printf("Close 1\n");
     close(client_two_socket);
-    printf("Close 1\n");
-
+    printf("Clients closed\n");
 }
