@@ -96,7 +96,6 @@ void *waitForClients() {
 void sendByte(int id, char column) {
     if (write(id == 1 ? client_one_socket : client_two_socket, &column, 1) == -1) {
         perror("Error sending data");
-        exit(1);
     }
 }
 
@@ -105,7 +104,6 @@ char receiveByte(int id) {
     char temp;
     if (read(id == 1 ? client_one_socket : client_two_socket, &temp, 1) == -1) {
         perror("Error receiving data");
-        exit(1);
     }
     return temp;
 }
@@ -118,6 +116,10 @@ void closeServer() {
 void closeClients() {
     pthread_cancel(client_one_socket);
     pthread_cancel(client_two_socket);
+    printf("Test Tread\n");
     close(client_one_socket);
+    printf("Close 1\n");
     close(client_two_socket);
+    printf("Close 1\n");
+
 }

@@ -2,7 +2,10 @@
 #define WINDOW_WIDTH 600
 #define WINDOW_HEIGHT 800
 #define WINDOW_TITLE "Connect Four - Waiting for player..."
-#define WINDOW_ICON_PATH "textures/icon.png"
+#define ICON_PATH_WINDOW "textures/icon.png"
+#define ICON_PATH_PLAYER_ONE "textures/pl1.png"
+#define ICON_PATH_PLAYER_TWO "textures/pl2.png"
+#define ICON_PATH_PREVIEW "textures/preview.png"
 #define FONT_PATH "fonts/IndieFlower-Regular.ttf"
 
 #define ROW_MAX 6

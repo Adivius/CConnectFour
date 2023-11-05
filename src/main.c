@@ -21,7 +21,7 @@ TTF_Font *font = NULL;
 SDL_Color textColor = {255, 255, 255, 255};
 
 int board[ROW_MAX][COL_MAX] = {0};
-int id_player = 0, starter_player = 1, current_player = 1, winner = 0;
+int id_player = 0, starter_player = 1, current_player = 1, winner = 0, wins_you = 0, wins_opp = 0;
 int game_is_running = 0, status = 0; // 0=Error(default), 1=Starting, 2=Playing, 3=Ending
 
 // Function to initialize SDL and other resources
@@ -49,7 +49,7 @@ int initialize() {
         return 0;
     }
 
-    icon = IMG_Load(WINDOW_ICON_PATH);
+    icon = IMG_Load(ICON_PATH_WINDOW);
     if (!icon) {
         fprintf(stderr, "Error loading window icon surface: %s\n", IMG_GetError());
         return 0;
@@ -64,7 +64,7 @@ int initialize() {
     }
 
     //Load textures
-    const char *textureFiles[3] = {"textures/player_1.png", "textures/player_2.png", "textures/preview.png"};
+    const char *textureFiles[3] = {ICON_PATH_PLAYER_ONE, ICON_PATH_PLAYER_TWO, ICON_PATH_PREVIEW};
     for (int i = 0; i < 3; i++) {
         textures[i] = IMG_LoadTexture(renderer, textureFiles[i]);
         if (!textures[i]) {
@@ -93,9 +93,13 @@ void setWindowTitle(char* title){
 void quit() {
     status = 0;
     closeClient();
+    printf("Test1\n");
     if (id_player == 1) {
         closeClients();
+        printf("Test2\n");
         closeServer();
+        printf("Test3\n");
+
     }
     for (int i = 0; i < 3; i++) {
         SDL_DestroyTexture(textures[i]);
@@ -213,16 +217,13 @@ void process() {
             }
 
             int mouseX = event.button.x;
+            int mouseY = event.button.y;
 
-            if (mouseX < GRID_OFFSET_X) {
+            if (mouseX < GRID_OFFSET_X || mouseX > GRID_OFFSET_X + CELL_SIZE * COL_MAX || mouseY < GRID_OFFSET_Y || mouseY > GRID_OFFSET_Y + CELL_SIZE * ROW_MAX) {
                 return;
             }
 
             int gridX = (mouseX - GRID_OFFSET_X) / CELL_SIZE;
-
-            if (gridX < 0 || gridX >= COL_MAX) {
-                return;
-            }
 
             int gridY = dropPiece(gridX);
             if (gridY == -1) {
@@ -251,8 +252,14 @@ void update(int gridX) {
     board[gridY][gridX] = current_player;
 
     winner = checkWin(current_player);
+
     if (winner > 0) {
         printf("Winner %d\n", winner);
+        if (winner == id_player){
+            wins_you++;
+        } else{
+            wins_opp++;
+        }
         status = 3;
     }
 
@@ -261,10 +268,8 @@ void update(int gridX) {
 }
 
 void reset(){
-    printf("start %d, current %d, id %d\n", starter_player, current_player, id_player);
     starter_player = starter_player == 1 ? 2 : 1;
     current_player = starter_player;
-    printf("start %d, current %d, id %d\n", starter_player, current_player, id_player);
     memset(board, 0, sizeof(board[0][0]) * ROW_MAX * COL_MAX);
     status = 2;
 }
@@ -277,12 +282,12 @@ void render() {
     SDL_RenderClear(renderer);
 
     switch (status) {
-
-            break;
         case 3:
-            drawText(renderer, WINDOW_WIDTH / 3, WINDOW_HEIGHT - WINDOW_HEIGHT / 2,
-                     winner == id_player ? "You won! " : "You lost!", &font, &textColor);
-            SDL_Rect titleRect = {WINDOW_WIDTH / 6, WINDOW_HEIGHT - WINDOW_HEIGHT / 2 - CELL_SIZE / 2, CELL_SIZE,
+            char winner_text[40];
+            sprintf(winner_text, "%s  %d : %d", winner == id_player ? "You won! " : "You lost!", wins_you, wins_opp);
+            drawText(renderer, WINDOW_WIDTH / 3,  WINDOW_HEIGHT / 8,
+                     winner_text, &font, &textColor);
+            SDL_Rect titleRect = {WINDOW_WIDTH / 6, WINDOW_HEIGHT / 8 - CELL_SIZE / 2, CELL_SIZE,
                                   CELL_SIZE};
             SDL_RenderCopy(renderer, textures[winner - 1], NULL, &titleRect);
 
@@ -290,7 +295,6 @@ void render() {
                      &textColor);
             drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 14, "And 'R' to rematch!", &font,
                      &textColor);
-            break;
         case 2:
             for (int row = 0; row < ROW_MAX; row++) {
                 for (int col = 0; col < COL_MAX; col++) {
@@ -304,6 +308,9 @@ void render() {
                     SDL_RenderCopy(renderer, textures[board[row][col] - 1], NULL, &cellRect);
 
                 }
+            }
+            if (status == 3){
+                break;
             }
 
             drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 10,
