@@ -44,29 +44,24 @@ void connectToServer(int port, char *ip) {
 }
 
 void sendByteToServer(char column) {
-    printf("Test1\n");
     if (write(client_socket, &column, 1) == -1) {
         perror("Error sending data");
     }
 }
 
 void *receiveBytesFromServer() {
-    while (1){
+    while (1) {
         char temp;
         if (read(client_socket, &temp, 1) == -1) {
             perror("Error receiving data");
             exit(1);
         }
 
-        printf("TEst6\n");
-
         int column = temp - '0';
 
-        printf("received %d\n", column);
-
-        if (column > 7){
+        if (column > 7) {
             reset();
-        } else{
+        } else {
             update(column);
         }
     }
@@ -76,5 +71,6 @@ void *receiveBytesFromServer() {
 }
 
 void closeClient() {
+    pthread_cancel(listen_thread);
     close(client_socket);
 }

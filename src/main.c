@@ -1,33 +1,16 @@
 #include <stdio.h>
-#include "SDL2/SDL.h"
-#include "SDL2/SDL_image.h"
-#include "SDL2/SDL_ttf.h"
-#include "render.h"
-#include "server.h"
-#include "client.h"
 #include <stdlib.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 
+#include "render.h"
+#include "server.h"
+#include "client.h"
 #include "utils.h"
 
-#define USAGE "\033[0;31mUsgae: ./cconnectfour <port> <ip>"
-
-// Constants
-#define WINDOW_WIDTH 600
-#define WINDOW_HEIGHT 800
-#define WINDOW_TITLE "Connect Four - Waiting for player..."
-#define WINDOW_ICON_PATH "textures/icon.png"
-#define FONT_PATH "fonts/IndieFlower-Regular.ttf"
-
-#define COLOR_BACKGROUND 36, 36, 36, 255
-#define COLOR_GRID 117, 117, 117, 117
-
-#define ROW_MAX 6
-#define COL_MAX 7
-#define CELL_SIZE 80
-#define GRID_OFFSET_X ((WINDOW_WIDTH - COL_MAX * CELL_SIZE) / 2)
-#define GRID_OFFSET_Y ((WINDOW_HEIGHT - ROW_MAX * CELL_SIZE) / 2)
 
 // SDL Resources
 SDL_Window *window = NULL;
@@ -38,12 +21,8 @@ TTF_Font *font = NULL;
 SDL_Color textColor = {255, 255, 255, 255};
 
 int board[ROW_MAX][COL_MAX] = {0};
-int id_player = 0;
-int current_player = 1;
-int winner = 0;
-int game_is_running = 0;
-int status = 0; // 0=Error(default), 1=Starting, 2=Playing, 3=Ending
-int rematch = 0;
+int id_player = 0, starter_player = 1, current_player = 1, winner = 0;
+int game_is_running = 0, status = 0; // 0=Error(default), 1=Starting, 2=Playing, 3=Ending
 
 // Function to initialize SDL and other resources
 int initialize() {
@@ -102,7 +81,7 @@ int initialize() {
     }
 
     status = 1;
-    current_player = 1;
+    current_player = starter_player;
     return 1;
 }
 
@@ -235,6 +214,10 @@ void process() {
 
             int mouseX = event.button.x;
 
+            if (mouseX < GRID_OFFSET_X) {
+                return;
+            }
+
             int gridX = (mouseX - GRID_OFFSET_X) / CELL_SIZE;
 
             if (gridX < 0 || gridX >= COL_MAX) {
@@ -278,7 +261,10 @@ void update(int gridX) {
 }
 
 void reset(){
-    current_player = 1;
+    printf("start %d, current %d, id %d\n", starter_player, current_player, id_player);
+    starter_player = starter_player == 1 ? 2 : 1;
+    current_player = starter_player;
+    printf("start %d, current %d, id %d\n", starter_player, current_player, id_player);
     memset(board, 0, sizeof(board[0][0]) * ROW_MAX * COL_MAX);
     status = 2;
 }
@@ -291,8 +277,18 @@ void render() {
     SDL_RenderClear(renderer);
 
     switch (status) {
-        case 1:
-            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 2, "Waiting for opponent", &font,
+
+            break;
+        case 3:
+            drawText(renderer, WINDOW_WIDTH / 3, WINDOW_HEIGHT - WINDOW_HEIGHT / 2,
+                     winner == id_player ? "You won! " : "You lost!", &font, &textColor);
+            SDL_Rect titleRect = {WINDOW_WIDTH / 6, WINDOW_HEIGHT - WINDOW_HEIGHT / 2 - CELL_SIZE / 2, CELL_SIZE,
+                                  CELL_SIZE};
+            SDL_RenderCopy(renderer, textures[winner - 1], NULL, &titleRect);
+
+            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 8, "Press 'esc' to quit", &font,
+                     &textColor);
+            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 14, "And 'R' to rematch!", &font,
                      &textColor);
             break;
         case 2:
@@ -317,19 +313,10 @@ void render() {
                                   CELL_SIZE};
             SDL_RenderCopy(renderer, textures[current_player - 1], NULL, &stateRect);
             break;
-        case 3:
-            drawText(renderer, WINDOW_WIDTH / 3, WINDOW_HEIGHT - WINDOW_HEIGHT / 2,
-                     winner == id_player ? "You won! " : "You lost!", &font, &textColor);
-            SDL_Rect titleRect = {WINDOW_WIDTH / 6, WINDOW_HEIGHT - WINDOW_HEIGHT / 2 - CELL_SIZE / 2, CELL_SIZE,
-                                  CELL_SIZE};
-            SDL_RenderCopy(renderer, textures[winner - 1], NULL, &titleRect);
-
-            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 8, "Press 'esc' to quit", &font,
-                     &textColor);
-            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 14, "And 'R' to rematch!", &font,
+        case 1:
+            drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 2, "Waiting for opponent", &font,
                      &textColor);
             break;
-
         default:
             drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 2, "Error", &font, &textColor);
             break;

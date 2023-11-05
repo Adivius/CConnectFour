@@ -52,7 +52,6 @@ void *distribute_one() {
     while (1) {
         char column = receiveByte(1);
         sendByte(2, column);
-        printf("Server sent %d\n", (column - '0'));
     }
 
     return NULL;
@@ -62,7 +61,6 @@ void *distribute_two() {
     while (1) {
         char column = receiveByte(2);
         sendByte(1, column);
-        printf("Server sent %d\n", (column - '0'));
     }
 
     return NULL;
@@ -113,10 +111,13 @@ char receiveByte(int id) {
 }
 
 void closeServer() {
+    pthread_cancel(starter_thread);
     close(server_socket);
 }
 
 void closeClients() {
+    pthread_cancel(client_one_socket);
+    pthread_cancel(client_two_socket);
     close(client_one_socket);
     close(client_two_socket);
 }
