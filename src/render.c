@@ -5,7 +5,7 @@
 
 #include "render.h"
 #include "game.h"
-#include "utils.h"
+#include "consts.h"
 #include "server.h"
 #include "client.h"
 

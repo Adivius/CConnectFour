@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
-#include "utils.h"
+#include "consts.h"
 
 int client_socket;
 

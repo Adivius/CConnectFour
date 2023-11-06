@@ -1,5 +1,5 @@
 #include "game.h"
-#include "utils.h"
+#include "consts.h"
 #include "render.h"
 #include "client.h"
 

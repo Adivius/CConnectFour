@@ -5,7 +5,7 @@
 #include "render.h"
 #include "server.h"
 #include "client.h"
-#include "utils.h"
+#include "consts.h"
 #include "game.h"
 
 // Clean up resources and quit the game

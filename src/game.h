@@ -1,4 +1,4 @@
-#include "utils.h"
+#include "consts.h"
 
 int dropPiece(int board[ROW_MAX][COL_MAX], int col);
 

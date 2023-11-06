@@ -21,6 +21,3 @@
 #define LOCALHOST "0.0.0.0"
 #define WINDOW_TITLE_SERVER "Connect Four - Server"
 #define WINDOW_TITLE_CLIENT "Connect Four - Client"
-
-void update(int column);
-void reset();
