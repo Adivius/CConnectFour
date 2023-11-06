@@ -3,29 +3,16 @@
 #include "SDL2/SDL_image.h"
 #include "SDL2/SDL_ttf.h"
 
-void drawText(SDL_Renderer *renderer,
-              const int x,
-              const int y,
-              const char *text,
-              TTF_Font **font,
-              const SDL_Color *textColor) {
+#include "utils.h"
 
-    //Draw with the according color
-    SDL_Surface *surface =
-            TTF_RenderText_Solid(*font, text, *textColor);
+void renderFree();
 
-    //Draw to texture
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+void render(int status, int board[ROW_MAX][COL_MAX], int winner, int id_player, int wins_you, int wins_opp,
+            int current_player);
 
-    SDL_FreeSurface(surface);
+void drawText(SDL_Renderer *renderer, const int x, const int y, const char *text, TTF_Font **font,
+              const SDL_Color *textColor);
 
-    //Adjust position
-    SDL_Rect textRect;
+void setWindowTitle(char *title);
 
-    SDL_QueryTexture(texture, NULL, NULL, &textRect.w, &textRect.h);
-
-    textRect.x = x, textRect.y = y - textRect.h / 2;
-
-    SDL_RenderCopy(renderer, texture, NULL, &textRect);
-    SDL_DestroyTexture(texture);
-}
+int init_sdl();
