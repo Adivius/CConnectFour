@@ -108,7 +108,7 @@ void drawText(SDL_Renderer *renderer, const int x,
 }
 
 // Process user input and events
-void process() {
+void process_sdl_input() {
 
     SDL_Event event;
 
@@ -145,7 +145,7 @@ void process() {
     }
 }
 
-void render(int status, int board[ROW_MAX][COL_MAX], int winner, int id_player, int wins_you, int wins_opp,
+void render_sdl(int board[ROW_MAX][COL_MAX], int winner, int id_player, int wins_you, int wins_opp,
             int current_player) {
 
     SDL_SetRenderDrawColor(renderer, COLOR_BACKGROUND);

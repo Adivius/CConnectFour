@@ -26,8 +26,8 @@ int getPlayerId() {
 }
 
 void gameTick() {
-    process();
-    render(status, board, winner, id_player, wins_you, wins_opp, current_player);
+    process_sdl_input();
+    render_sdl(board, winner, id_player, wins_you, wins_opp, current_player);
 }
 
 int checkWin() {

@@ -5,14 +5,13 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
-#include <signal.h>
+
+#include "game.h"
 
 int server_socket, client_one_socket, client_two_socket;
 
 struct sockaddr_in server_addr_server, client_one_addr, client_two_addr;
 socklen_t client_addr_len = sizeof(client_one_addr);
-
-int player = 1;
 
 pthread_t starter_thread;
 pthread_t server_thread_one;
@@ -50,20 +49,18 @@ void startServer(int port) {
 
 }
 void *distribute_one() {
-    while (1) {
+    while (isGameRunning()) {
         char column = receiveByte(1);
         sendByte(2, column);
     }
-
     return NULL;
 }
 
 void *distribute_two() {
-    while (1) {
+    while (isGameRunning()) {
         char column = receiveByte(2);
         sendByte(1, column);
     }
-
     return NULL;
 }
 

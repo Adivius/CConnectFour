@@ -8,7 +8,6 @@
 #include "utils.h"
 #include "game.h"
 
-
 // Clean up resources and quit the game
 void quit() {
     status = 0;
@@ -22,8 +21,8 @@ void quit() {
 
 int main(int argc, char *argv[]) {
 
-    if (argc < 2) {
-        puts(USAGE);
+    if (argc < 2 || argc > 3) {
+        printf("%s\n", USAGE);
         return 0;
     }
 
@@ -36,17 +35,17 @@ int main(int argc, char *argv[]) {
 
     if (argc == 2) {
         startServer(atoi(argv[1]));
-        connectToServer(atoi(argv[1]), "127.0.0.1");
-        setWindowTitle("Connect Four - Player 1 (Server)");
+        connectToServer(atoi(argv[1]), LOCALHOST);
+        setWindowTitle(WINDOW_TITLE_SERVER);
     } else {
         char resolvedIP[INET_ADDRSTRLEN];
         if (hostnameToIp(argv[2], resolvedIP, INET_ADDRSTRLEN) != 0){
-            puts("Invalid ip\n");
-            exit(1);
+            printf("%s\n", "Invalid ip");
+            quit();
         }
         connectToServer(atoi(argv[1]), resolvedIP);
         status = 2;
-        setWindowTitle("Connect Four - Player 2 (Client)");
+        setWindowTitle(WINDOW_TITLE_CLIENT);
     }
 
     while (isGameRunning()) {
