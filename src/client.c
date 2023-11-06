@@ -5,14 +5,11 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include "utils.h"
-#include "server.h"
 
 int client_socket;
 
 struct sockaddr_in server_addr_client;
 socklen_t server_addr_client_length = sizeof(server_addr_client);
-
-//pthread_t listen_tread;
 
 pthread_t listen_thread;
 
@@ -73,4 +70,23 @@ void *receiveBytesFromServer() {
 void closeClient() {
     pthread_cancel(listen_thread);
     close(client_socket);
+}
+
+
+int hostnameToIp(const char *hostname, char *resolvedIP, size_t resolvedIPSize) {
+    struct addrinfo *info;
+
+    // Resolve the hostname
+    if (getaddrinfo(hostname, NULL, NULL, &info) != 0) {
+        return -1; // Failed to resolve hostname
+    }
+
+    // Convert to string
+    if (inet_ntop(AF_INET, &(((struct sockaddr_in *)(info->ai_addr))->sin_addr), resolvedIP, resolvedIPSize) == NULL) {
+        freeaddrinfo(info);
+        return -1; // Failed to convert to IP string
+    }
+
+    freeaddrinfo(info); // Free the memory allocated by getaddrinfo
+    return 0; // Success
 }

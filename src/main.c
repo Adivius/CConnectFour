@@ -269,23 +269,6 @@ void render() {
 
 }
 
-int resolveHostnameToIP(const char *hostname, char *resolvedIP, size_t resolvedIPSize) {
-    struct addrinfo *info;
-
-    // Resolve the hostname
-    if (getaddrinfo(hostname, NULL, NULL, &info) != 0) {
-        return -1; // Failed to resolve hostname
-    }
-
-    // Convert to string
-    if (inet_ntop(AF_INET, &(((struct sockaddr_in *)(info->ai_addr))->sin_addr), resolvedIP, resolvedIPSize) == NULL) {
-        freeaddrinfo(info);
-        return -1; // Failed to convert to IP string
-    }
-
-    freeaddrinfo(info); // Free the memory allocated by getaddrinfo
-    return 0; // Success
-}
 
 int main(int argc, char *argv[]) {
 
@@ -304,7 +287,7 @@ int main(int argc, char *argv[]) {
         setWindowTitle("Connect Four - Player 1 (Server)");
     } else {
         char resolvedIP[INET_ADDRSTRLEN];
-        if (resolveHostnameToIP(argv[2], resolvedIP, INET_ADDRSTRLEN) != 0){
+        if (hostnameToIp(argv[2], resolvedIP, INET_ADDRSTRLEN) != 0){
             puts("Invalid ip\n");
             exit(1);
         }
