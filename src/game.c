@@ -102,7 +102,7 @@ void handleMouseDown(int mouse_x, int mouse_y) {
 
     update(gridX);
 
-    sendByteToServer(gridX + '0');
+    sendByteToServer((char)gridX);
 }
 
 int dropPiece(int board[ROW_MAX][COL_MAX], int col) {

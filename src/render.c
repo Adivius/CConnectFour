@@ -129,8 +129,7 @@ void process_sdl_input() {
                     if (status != 3) {
                         return;
                     }
-                    char temp = (7 + getPlayerId()) + '0';
-                    sendByteToServer(temp);
+                    sendByteToServer((char)PACKAGE_REMATCH);
                     reset();
                     break;
             }

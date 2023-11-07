@@ -17,6 +17,9 @@
 #define COLOR_BACKGROUND 36, 36, 36, 255
 #define COLOR_GRID 117, 117, 117, 117
 
+#define PACKAGE_REMATCH 8
+#define PACKAGE_END 9
+
 #define USAGE "\033[0;31mUsgae: ./cconnectfour <port> <ip>"
 #define LOCALHOST "0.0.0.0"
 #define WINDOW_TITLE_SERVER "Connect Four - Server"

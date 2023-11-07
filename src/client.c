@@ -57,9 +57,9 @@ void *receiveBytesFromServer() {
             exit(1);
         }
 
-        int column = temp - '0';
+        int column = (int) temp;
 
-        if (column > 7) {
+        if (column == PACKAGE_REMATCH) {
             reset();
         } else {
             update(column);
