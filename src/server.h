@@ -1,11 +1,9 @@
 #pragma once
 
-void startServer(int port);
+void startServer(const int port);
 void *waitForClients();
 void *distribute();
-void sendByte(int id, char column);
-char receiveByte(int id);
+void sendByte(const int id, const char column);
+const char receiveByte(const int id);
 void closeServer();
 void closeClients();
-
-extern int status;

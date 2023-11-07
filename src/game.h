@@ -1,19 +1,23 @@
+#pragma once
+
 #include "consts.h"
 
-int dropPiece(int board[ROW_MAX][COL_MAX], int col);
+extern int status;
 
-void reset();
+const int getTopPos(const int board[ROW_MAX][COL_MAX], const int col);
 
-void update(int gridX);
+void restartGame();
 
-void init_game(int result, int argc);
+void dropPieceAtX(const int gridX);
 
-int isGameRunning();
+void init_game(const int argc);
 
-void setGameRunning(int status);
+const int isGameRunning();
+
+void setGameRunning(const int status);
 
 void gameTick();
 
-int getPlayerId();
+const int getPlayerId();
 
-void handleMouseDown(int mouse_x, int mouse_y);
+void handleMouseDown(const int mouse_x, const int mouse_y);

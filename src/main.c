@@ -10,7 +10,7 @@
 
 // Clean up resources and quit the game
 void quit() {
-    status = 0;
+    status = STATUS_ERROR;
     closeClient();
     if (getPlayerId() == 1) {
         closeServer();
@@ -20,9 +20,8 @@ void quit() {
 }
 
 int main(int argc, char *argv[]) {
-
     if (argc < 2 || argc > 3) {
-        printf("%s\n", USAGE);
+        puts(USAGE);
         return 0;
     }
 
@@ -30,22 +29,24 @@ int main(int argc, char *argv[]) {
     if ((result = init_sdl()) == 0) {
         exit(1);
     }
-    init_game(result, argc);
-    status = 1;
+    init_game(argc);
+    status = STATUS_STARTING;
+
+    setWindowTitle((argc == 2) ? WINDOW_TITLE_SERVER : WINDOW_TITLE_CLIENT);
+
+    const int port = atoi(argv[1]);
 
     if (argc == 2) {
-        startServer(atoi(argv[1]));
-        connectToServer(atoi(argv[1]), LOCALHOST);
-        setWindowTitle(WINDOW_TITLE_SERVER);
+        startServer(port);
+        connectToServer(port, 0);
     } else {
         char resolvedIP[INET_ADDRSTRLEN];
         if (hostnameToIp(argv[2], resolvedIP, INET_ADDRSTRLEN) != 0){
             printf("%s\n", "Invalid ip");
             quit();
         }
-        connectToServer(atoi(argv[1]), resolvedIP);
-        status = 2;
-        setWindowTitle(WINDOW_TITLE_CLIENT);
+        connectToServer(port, inet_addr(resolvedIP));
+        status = STATUS_RUNNING;
     }
 
     while (isGameRunning()) {
@@ -53,5 +54,4 @@ int main(int argc, char *argv[]) {
     }
 
     quit();
-    return 0;
 }

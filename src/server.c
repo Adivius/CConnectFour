@@ -13,13 +13,9 @@ int server_socket, client_one_socket, client_two_socket;
 struct sockaddr_in server_addr_server, client_one_addr, client_two_addr;
 socklen_t client_addr_len = sizeof(client_one_addr);
 
-pthread_t starter_thread;
-pthread_t server_thread_one;
-pthread_t server_thread_two;
+pthread_t starter_thread, server_thread_one, server_thread_two;
 
-
-void startServer(int port) {
-
+void startServer(const int port) {
     // Create socket
     server_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (server_socket == -1) {
@@ -46,26 +42,25 @@ void startServer(int port) {
 
     printf("Server listening on port %d\n", port);
     pthread_create(&starter_thread, NULL, waitForClients, NULL);
-
 }
+
 void *distribute_one() {
     while (isGameRunning()) {
-        char column = receiveByte(1);
-        sendByte(2, column);
+        sendByte(2, receiveByte(1));
     }
+
     return NULL;
 }
 
 void *distribute_two() {
     while (isGameRunning()) {
-        char column = receiveByte(2);
-        sendByte(1, column);
+        sendByte(1, receiveByte(2));
     }
+
     return NULL;
 }
 
 void *waitForClients() {
-
     client_one_socket = accept(server_socket, (struct sockaddr *) &client_one_addr, &client_addr_len);
     if (client_one_socket == -1) {
         perror("Error accepting connection");
@@ -78,7 +73,7 @@ void *waitForClients() {
         exit(1);
     }
 
-    status = 2;
+    status = STATUS_RUNNING;
 
     pthread_create(&server_thread_one, NULL, distribute_one, NULL);
     pthread_create(&server_thread_two, NULL, distribute_two, NULL);
@@ -86,19 +81,16 @@ void *waitForClients() {
     printf("Clients connected! Started server thread %s:%d\n", inet_ntoa(client_two_addr.sin_addr),
            ntohs(client_two_addr.sin_port));
 
-
     return NULL;
-
 }
 
-void sendByte(int id, char column) {
+void sendByte(const int id, const char column) {
     if (write(id == 1 ? client_one_socket : client_two_socket, &column, 1) == -1) {
         perror("Error sending data");
     }
 }
 
-
-char receiveByte(int id) {
+const char receiveByte(const int id) {
     char temp;
     if (read(id == 1 ? client_one_socket : client_two_socket, &temp, 1) == -1) {
         perror("Error receiving data");
@@ -109,16 +101,18 @@ char receiveByte(int id) {
 void closeServer() {
     closeClients();
     close(server_socket);
-    printf("Server closed\n");
+
+    puts("Server closed");
 }
 
 void closeClients() {
     pthread_cancel(server_thread_one);
-    pthread_cancel(server_thread_two);
-    // Wait for threads to terminate before closing sockets
     pthread_join(server_thread_one, NULL);
-    pthread_join(server_thread_two, NULL);
     close(client_one_socket);
+
+    pthread_cancel(server_thread_two);    
+    pthread_join(server_thread_two, NULL);
     close(client_two_socket);
-    printf("Clients closed\n");
+
+    puts("Clients closed");
 }

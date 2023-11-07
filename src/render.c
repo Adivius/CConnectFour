@@ -9,16 +9,14 @@
 #include "server.h"
 #include "client.h"
 
-// SDL Resources
-SDL_Window *window = NULL;
-SDL_Renderer *renderer = NULL;
-SDL_Surface *icon = NULL;
-SDL_Texture *textures[3] = {NULL}; // Index 0 for player 1, 1 for player 2, 2 for preview
-TTF_Font *font = NULL;
+SDL_Window *window;
+SDL_Renderer *renderer;
+SDL_Surface *icon;
+SDL_Texture *textures[3]; // Index 0 for player 1, 1 for player 2, 2 for preview
+TTF_Font *font;
 SDL_Color textColor = {255, 255, 255, 255};
 
-
-int init_sdl() {
+const int init_sdl() {
     if (SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         fprintf(stderr, "Error initializing SDL: %s\n", SDL_GetError());
         return 0;
@@ -76,10 +74,9 @@ int init_sdl() {
     return 1;
 }
 
-void setWindowTitle(char *title) {
+void setWindowTitle(const char *title) {
     SDL_SetWindowTitle(window, title);
 }
-
 
 void drawText(SDL_Renderer *renderer, const int x,
               const int y,
@@ -107,51 +104,14 @@ void drawText(SDL_Renderer *renderer, const int x,
     SDL_DestroyTexture(texture);
 }
 
-// Process user input and events
-void process_sdl_input() {
-
-    SDL_Event event;
-
-    if (SDL_PollEvent(&event) == 0) {
-        return;
-    }
-
-    switch (event.type) {
-        case SDL_QUIT:
-            setGameRunning(0);
-            break;
-        case SDL_KEYDOWN:
-            switch (event.key.keysym.sym) {
-                case SDLK_ESCAPE:
-                    setGameRunning(0);
-                    break;
-                case SDLK_r:
-                    if (status != 3) {
-                        return;
-                    }
-                    sendByteToServer((char)PACKAGE_REMATCH);
-                    reset();
-                    break;
-            }
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-
-            if (event.button.button != SDL_BUTTON_LEFT || status != 2) {
-                return;
-            }
-            handleMouseDown(event.button.x, event.button.y);
-            break;
-    }
-}
-
-void render_sdl(int board[ROW_MAX][COL_MAX], int winner, int id_player, int wins_you, int wins_opp,
-            int current_player) {
+void render_sdl(const int board[ROW_MAX][COL_MAX], const int winner, const int id_player, const int wins_you, const int wins_opp,
+            const int current_player) {
 
     SDL_SetRenderDrawColor(renderer, COLOR_BACKGROUND);
     SDL_RenderClear(renderer);
 
     switch (status) {
-        case 3:
+        case STATUS_STOPPING:;
             char winner_text[40];
             sprintf(winner_text, "%s  %d : %d", winner == id_player ? "You won! " : "You lost!", wins_you, wins_opp);
             drawText(renderer, WINDOW_WIDTH / 3, WINDOW_HEIGHT / 8,
@@ -164,7 +124,7 @@ void render_sdl(int board[ROW_MAX][COL_MAX], int winner, int id_player, int wins
                      &textColor);
             drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 14, "And 'R' to rematch!", &font,
                      &textColor);
-        case 2:
+        case STATUS_RUNNING:
             for (int row = 0; row < ROW_MAX; row++) {
                 for (int col = 0; col < COL_MAX; col++) {
 
@@ -178,7 +138,7 @@ void render_sdl(int board[ROW_MAX][COL_MAX], int winner, int id_player, int wins
 
                 }
             }
-            if (status == 3) {
+            if (status == STATUS_STOPPING) {
                 break;
             }
 
@@ -189,7 +149,7 @@ void render_sdl(int board[ROW_MAX][COL_MAX], int winner, int id_player, int wins
                                   CELL_SIZE};
             SDL_RenderCopy(renderer, textures[current_player - 1], NULL, &stateRect);
             break;
-        case 1:
+        case STATUS_STARTING:
             drawText(renderer, WINDOW_WIDTH / 5, WINDOW_HEIGHT - WINDOW_HEIGHT / 2, "Waiting for opponent", &font,
                      &textColor);
             break;
@@ -205,7 +165,7 @@ void render_sdl(int board[ROW_MAX][COL_MAX], int winner, int id_player, int wins
 
 
 void renderFree() {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < sizeof(textures) / sizeof(textures[0]); i++) {
         SDL_DestroyTexture(textures[i]);
     }
     SDL_FreeSurface(icon);

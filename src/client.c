@@ -7,7 +7,6 @@
 #include <pthread.h>
 
 #include "game.h"
-#include "consts.h"
 
 int client_socket;
 
@@ -16,8 +15,7 @@ socklen_t server_addr_client_length = sizeof(server_addr_client);
 
 pthread_t listen_thread;
 
-void connectToServer(int port, char *ip) {
-
+void connectToServer(const int port, const unsigned long ip) {
     // Create socket
     client_socket = socket(AF_INET, SOCK_STREAM, 0);
     if (client_socket == -1) {
@@ -27,7 +25,7 @@ void connectToServer(int port, char *ip) {
 
     // Configure server address
     server_addr_client.sin_family = AF_INET;
-    server_addr_client.sin_addr.s_addr = inet_addr(ip);
+    server_addr_client.sin_addr.s_addr = ip;
     server_addr_client.sin_port = htons(port);
 
     // Connect to server
@@ -36,14 +34,14 @@ void connectToServer(int port, char *ip) {
         exit(1);
     }
 
-    printf("Connected to server %s:%d\n", ip, port);
+    puts("Connected");
 
     pthread_create(&listen_thread, NULL, receiveBytesFromServer, NULL);
 
     printf("Started listen thread\n");
 }
 
-void sendByteToServer(char column) {
+void sendByteToServer(const char column) {
     if (write(client_socket, &column, 1) == -1) {
         perror("Error sending data");
     }
@@ -57,26 +55,25 @@ void *receiveBytesFromServer() {
             exit(1);
         }
 
-        int column = (int) temp;
-
-        if (column == PACKAGE_REMATCH) {
-            reset();
+        if (temp == PACKET_REMATCH) {
+            restartGame();
         } else {
-            update(column);
+            dropPieceAtX(temp);
         }
     }
 
     return NULL;
-
 }
 
 void closeClient() {
-    pthread_cancel(listen_thread);
-    close(client_socket);
+    if (listen_thread != 0) {
+        pthread_cancel(listen_thread);
+        pthread_join(listen_thread, NULL);
+        close(client_socket);
+    }
 }
 
-
-int hostnameToIp(const char *hostname, char *resolvedIP, size_t resolvedIPSize) {
+const int hostnameToIp(const char *hostname, char *resolvedIP, size_t resolvedIPSize) {
     struct addrinfo *info;
 
     // Resolve the hostname
