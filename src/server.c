@@ -106,13 +106,17 @@ void closeServer() {
 }
 
 void closeClients() {
-    pthread_cancel(server_thread_one);
-    pthread_join(server_thread_one, NULL);
-    close(client_one_socket);
+    if (server_thread_one != 0) {
+        pthread_cancel(server_thread_one);
+        pthread_join(server_thread_one, NULL);
+        close(client_one_socket);
+    }
 
-    pthread_cancel(server_thread_two);    
-    pthread_join(server_thread_two, NULL);
-    close(client_two_socket);
+    if (server_thread_two != 0) {
+        pthread_cancel(server_thread_two);
+        pthread_join(server_thread_two, NULL);
+        close(client_two_socket);
+    }
 
     puts("Clients closed");
 }

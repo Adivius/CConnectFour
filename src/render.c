@@ -86,7 +86,7 @@ void drawText(SDL_Renderer *renderer, const int x,
 
     //Draw with the according color
     SDL_Surface *surface =
-            TTF_RenderText_Solid(*font, text, *textColor);
+            TTF_RenderText_Blended(*font, text, *textColor);
 
     //Draw to texture
     SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
