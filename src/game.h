@@ -18,7 +18,7 @@ void process_sdl_input();
 
 const int getPlayerId();
 
-void dropPieceAtX(const int gridX);
+void dropPieceAtX(const int gridX, const int player);
 
 const int getTopPos(const int board[ROW_MAX][COL_MAX], const int col);
 

@@ -25,7 +25,7 @@
 #define PACKET_REMATCH 8
 #define PACKET_END 9
 
-#define USAGE "\e[31m" "Usage: ./cconnectfour <port> <ip>" "\e[0m"
+#define USAGE "Usage: ./cconnectfour <port> <ip>"
 
 #define STATUS_ERROR 0
 #define STATUS_STARTING 1

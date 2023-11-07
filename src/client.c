@@ -48,17 +48,23 @@ void sendByteToServer(const char column) {
 }
 
 void *receiveBytesFromServer() {
-    while (1) {
-        char temp;
-        if (read(client_socket, &temp, 1) == -1) {
+    while (isGameRunning()) {
+        char packet;
+        if (read(client_socket, &packet, 1) == -1) {
             perror("Error receiving data");
             exit(1);
         }
 
-        if (temp == PACKET_REMATCH) {
-            restartGame();
-        } else {
-            dropPieceAtX(temp);
+        switch (packet) {
+            case PACKET_REMATCH:
+                restartGame();
+                break;
+            case PACKET_END:
+                setGameRunning(0);
+                break;
+            default:
+                dropPieceAtX(packet, getPlayerId() == 1 ? 2 : 1);
+                break;
         }
     }
 
@@ -70,6 +76,7 @@ void closeClient() {
         pthread_cancel(listen_thread);
         pthread_join(listen_thread, NULL);
         close(client_socket);
+        puts("Client closed");
     }
 }
 

@@ -35,11 +35,13 @@ void process_sdl_input() {
     for (SDL_Event event; SDL_PollEvent(&event);) {
     switch (event.type) {
         case SDL_QUIT:
+            sendByteToServer(PACKET_END);
             setGameRunning(0);
             break;
         case SDL_KEYDOWN:
             switch (event.key.keysym.sym) {
                 case SDLK_ESCAPE:
+                    sendByteToServer(PACKET_END);
                     setGameRunning(0);
                     break;
                 case SDLK_r:
@@ -131,7 +133,7 @@ void handleMouseDown(const int mouse_x, const int mouse_y) {
         return;
     }
 
-    dropPieceAtX(gridX);
+    dropPieceAtX(gridX, id_player);
 
     sendByteToServer(gridX);
 }
@@ -154,8 +156,12 @@ void restartGame() {
     status = STATUS_RUNNING;
 }
 
-void dropPieceAtX(const int gridX) {
+void dropPieceAtX(const int gridX, const int player) {
     if (status != STATUS_RUNNING) {
+        return;
+    }
+
+    if (current_player != player){
         return;
     }
 

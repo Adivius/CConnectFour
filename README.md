@@ -11,22 +11,22 @@ Player one will be **Host & Client** and player two will just be a **Client**
 
 ## Build
 Clone project and run
-```shell
+```
 make
 ```
 
 ## Run
 To start the server run
-```shell
+```
 ./cconnectfour <port> <ip>
 ```
 To join existing game run
-```shell
+```
 ./cconnectfour <port>
 ```
 
 To clean up the build run
-```shell
+```
 make clean
 ```
 

@@ -32,3 +32,5 @@ format:
 
 clean:
 	rm -rf $(BUILD_DIR)
+
+rebuild: clean $(BUILD_DIR)/$(TARGET)
