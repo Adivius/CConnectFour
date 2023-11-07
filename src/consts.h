@@ -1,6 +1,5 @@
 #pragma once
 
-#define WINDOW_TITLE "Connect Four - Waiting for player..."
 #define WINDOW_TITLE_SERVER "Connect Four - Server"
 #define WINDOW_TITLE_CLIENT "Connect Four - Client"
 

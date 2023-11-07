@@ -3,14 +3,14 @@
 #include "render.h"
 #include "client.h"
 
-int board[ROW_MAX][COL_MAX] = {0};
+int board[ROW_MAX][COL_MAX];
 int id_player, starter_player = 1, current_player = 1, winner, wins_you, wins_opp;
 int game_is_running, status;
 
-void init_game(const int argc) {
+void init_game(const int player) {
     game_is_running = 1;
     current_player = starter_player;
-    id_player = argc == 2 ? 1 : 2;
+    id_player = player;
 }
 
 const int isGameRunning() {
@@ -169,7 +169,6 @@ void dropPieceAtX(const int gridX) {
     winner = checkWin();
 
     if (winner > 0) {
-        printf("Winner %d\n", winner);
         if (winner == id_player) {
             wins_you++;
         } else {

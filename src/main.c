@@ -25,24 +25,26 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    int result;
-    if ((result = init_sdl()) == 0) {
+    if (!init_sdl()) {
         exit(1);
     }
-    init_game(argc);
+
+    const int id_player = argc == 2 ? 1 : 2;
+
+    init_game(id_player);
     status = STATUS_STARTING;
 
-    setWindowTitle((argc == 2) ? WINDOW_TITLE_SERVER : WINDOW_TITLE_CLIENT);
+    setWindowTitle((id_player == 1) ? WINDOW_TITLE_SERVER : WINDOW_TITLE_CLIENT);
 
     const int port = atoi(argv[1]);
 
-    if (argc == 2) {
+    if (id_player == 1) {
         startServer(port);
         connectToServer(port, 0);
     } else {
         char resolvedIP[INET_ADDRSTRLEN];
-        if (hostnameToIp(argv[2], resolvedIP, INET_ADDRSTRLEN) != 0){
-            printf("%s\n", "Invalid ip");
+        if (resolveHostnameToIp(argv[2], resolvedIP) != 0){
+            puts("Invalid ip");
             quit();
         }
         connectToServer(port, inet_addr(resolvedIP));

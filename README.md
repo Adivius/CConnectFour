@@ -7,11 +7,12 @@ Player one will be **Host & Client** and player two will just be a **Client**
 > - SDL2
 > - SDL2 Image 
 > - SDL2 TTF 
+> - Make
 
 ## Build
 Clone project and run
 ```shell
-./build
+make
 ```
 
 ## Run
@@ -22,6 +23,11 @@ To start the server run
 To join existing game run
 ```shell
 ./cconnectfour <port>
+```
+
+To clean up the build run
+```shell
+make clean
 ```
 
 ## License

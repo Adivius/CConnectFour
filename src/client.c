@@ -73,7 +73,7 @@ void closeClient() {
     }
 }
 
-const int hostnameToIp(const char *hostname, char *resolvedIP, size_t resolvedIPSize) {
+const int resolveHostnameToIp(const char *hostname, char *resolvedIP) {
     struct addrinfo *info;
 
     // Resolve the hostname
@@ -82,7 +82,7 @@ const int hostnameToIp(const char *hostname, char *resolvedIP, size_t resolvedIP
     }
 
     // Convert to string
-    if (inet_ntop(AF_INET, &(((struct sockaddr_in *)(info->ai_addr))->sin_addr), resolvedIP, resolvedIPSize) == NULL) {
+    if (inet_ntop(AF_INET, &(((struct sockaddr_in *)(info->ai_addr))->sin_addr), resolvedIP, INET_ADDRSTRLEN) == NULL) {
         freeaddrinfo(info);
         return -1; // Failed to convert to IP string
     }

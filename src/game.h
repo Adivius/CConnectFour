@@ -4,20 +4,22 @@
 
 extern int status;
 
-const int getTopPos(const int board[ROW_MAX][COL_MAX], const int col);
+void init_game(const int player);
 
-void restartGame();
-
-void dropPieceAtX(const int gridX);
-
-void init_game(const int argc);
+void gameTick();
 
 const int isGameRunning();
 
 void setGameRunning(const int status);
 
-void gameTick();
+void handleMouseDown(const int mouse_x, const int mouse_y);
+
+void process_sdl_input();
 
 const int getPlayerId();
 
-void handleMouseDown(const int mouse_x, const int mouse_y);
+void dropPieceAtX(const int gridX);
+
+const int getTopPos(const int board[ROW_MAX][COL_MAX], const int col);
+
+void restartGame();

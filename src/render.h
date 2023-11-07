@@ -7,7 +7,9 @@
 
 #include "consts.h"
 
-void renderFree();
+const int init_sdl();
+
+void setWindowTitle(const char *title);
 
 void render_sdl(const int board[ROW_MAX][COL_MAX], const int winner, const int id_player, const int wins_you, const int wins_opp,
             const int current_player);
@@ -15,8 +17,4 @@ void render_sdl(const int board[ROW_MAX][COL_MAX], const int winner, const int i
 void drawText(SDL_Renderer *renderer, const int x, const int y, const char *text, TTF_Font **font,
               const SDL_Color *textColor);
 
-void setWindowTitle(const char *title);
-
-void process_sdl_input();
-
-const int init_sdl();
+void renderFree();
